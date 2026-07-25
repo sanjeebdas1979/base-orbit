@@ -7,6 +7,8 @@ import {
   useState,
 } from "react";
 
+import { useAccount } from "wagmi";
+
 const CANVAS_SIZE = 420;
 const CENTER = CANVAS_SIZE / 2;
 const ORBIT_RADIUS = 135;
@@ -19,6 +21,12 @@ type GameStatus =
   | "countdown"
   | "playing"
   | "game-over";
+
+type SaveStatus =
+  | "idle"
+  | "saving"
+  | "saved"
+  | "error";
 
 type Obstacle = {
   angle: number;
@@ -97,6 +105,8 @@ function getLevelFromTime(elapsedTime: number) {
 }
 
 export default function OrbitGame() {
+  const { address } = useAccount();
+
   const canvasRef =
     useRef<HTMLCanvasElement | null>(null);
 
@@ -107,6 +117,9 @@ export default function OrbitGame() {
     useRef<number | null>(null);
 
   const countdownTimerRef =
+    useRef<number | null>(null);
+
+  const levelFlashTimerRef =
     useRef<number | null>(null);
 
   const audioContextRef =
@@ -144,6 +157,12 @@ export default function OrbitGame() {
 
   const [isNewBest, setIsNewBest] =
     useState(false);
+
+  const [saveStatus, setSaveStatus] =
+    useState<SaveStatus>("idle");
+
+  const [saveMessage, setSaveMessage] =
+    useState("");
 
   useEffect(() => {
     const savedBestScore =
@@ -186,6 +205,10 @@ export default function OrbitGame() {
       }
 
       const audioContext = getAudioContext();
+
+      if (audioContext.state === "suspended") {
+        void audioContext.resume();
+      }
 
       const oscillator =
         audioContext.createOscillator();
@@ -261,28 +284,100 @@ export default function OrbitGame() {
       return nextValue;
     });
   }, []);
-const shareScore = useCallback(() => {
-  const text = `I scored ${score} in Base Orbit on Base 🟦
+
+  const shareScore = useCallback(() => {
+    const text = `I scored ${score} in Base Orbit on Base 🟦
 
 Can you beat my score?
 
 Survive the block. Own the streak.`;
 
-  const appUrl = window.location.origin;
+    const appUrl = window.location.origin;
 
-  const xUrl = new URL(
-    "https://twitter.com/intent/tweet",
+    const xUrl = new URL(
+      "https://twitter.com/intent/tweet",
+    );
+
+    xUrl.searchParams.set("text", text);
+    xUrl.searchParams.set("url", appUrl);
+
+    window.open(
+      xUrl.toString(),
+      "_blank",
+      "noopener,noreferrer",
+    );
+  }, [score]);
+
+  const saveScore = useCallback(
+    async (
+      finalScore: number,
+      finalLevel: number,
+    ) => {
+      if (!address) {
+        setSaveStatus("error");
+        setSaveMessage(
+          "Wallet address was not available.",
+        );
+        return;
+      }
+
+      setSaveStatus("saving");
+      setSaveMessage("Saving your daily score...");
+
+      try {
+        const response = await fetch("/api/scores", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            walletAddress: address,
+            score: finalScore,
+            level: finalLevel,
+          }),
+        });
+
+        const result = (await response.json()) as {
+          saved?: boolean;
+          bestScore?: number;
+          error?: string;
+        };
+
+        if (!response.ok) {
+          throw new Error(
+            result.error ??
+              "Score could not be saved.",
+          );
+        }
+
+        setSaveStatus("saved");
+
+        if (result.saved) {
+          setSaveMessage(
+            "Daily leaderboard score saved.",
+          );
+        } else {
+          setSaveMessage(
+            `Your daily best remains ${result.bestScore ?? finalScore}.`,
+          );
+        }
+
+        console.log("Score saved:", result);
+      } catch (error) {
+        console.error("Score request failed:", error);
+
+        setSaveStatus("error");
+
+        setSaveMessage(
+          error instanceof Error
+            ? error.message
+            : "Score could not be saved.",
+        );
+      }
+    },
+    [address],
   );
 
-  xUrl.searchParams.set("text", text);
-  xUrl.searchParams.set("url", appUrl);
-
-  window.open(
-    xUrl.toString(),
-    "_blank",
-    "noopener,noreferrer",
-  );
-}, [score]);
   const stopAnimation = useCallback(() => {
     if (animationFrameRef.current !== null) {
       window.cancelAnimationFrame(
@@ -300,6 +395,16 @@ Survive the block. Own the streak.`;
       );
 
       countdownTimerRef.current = null;
+    }
+  }, []);
+
+  const stopLevelFlashTimer = useCallback(() => {
+    if (levelFlashTimerRef.current !== null) {
+      window.clearTimeout(
+        levelFlashTimerRef.current,
+      );
+
+      levelFlashTimerRef.current = null;
     }
   }, []);
 
@@ -648,8 +753,15 @@ Survive the block. Own the streak.`;
       scoreRef.current,
     );
 
+    const finalLevel = getLevelFromTime(
+      elapsedTimeRef.current,
+    );
+
     setScore(finalScore);
+    setLevel(finalLevel);
     setStatus("game-over");
+
+    void saveScore(finalScore, finalLevel);
 
     setBestScore((currentBest) => {
       const beatPreviousBest =
@@ -675,6 +787,7 @@ Survive the block. Own the streak.`;
     createCollisionParticles,
     playCrashSound,
     runExplosionAnimation,
+    saveScore,
     stopAnimation,
   ]);
 
@@ -772,9 +885,12 @@ Survive the block. Own the streak.`;
 
           playLevelSound();
 
-          window.setTimeout(() => {
-            setLevelFlash(null);
-          }, 650);
+          stopLevelFlashTimer();
+
+          levelFlashTimerRef.current =
+            window.setTimeout(() => {
+              setLevelFlash(null);
+            }, 650);
         }
 
         return currentLevel;
@@ -791,6 +907,7 @@ Survive the block. Own the streak.`;
       drawGame,
       endGame,
       playLevelSound,
+      stopLevelFlashTimer,
     ],
   );
 
@@ -809,6 +926,7 @@ Survive the block. Own the streak.`;
   const startCountdown = useCallback(() => {
     stopAnimation();
     stopCountdown();
+    stopLevelFlashTimer();
 
     playerAngleRef.current = 0;
     playerDirectionRef.current = 1;
@@ -825,7 +943,10 @@ Survive the block. Own the streak.`;
 
     setScore(0);
     setLevel(1);
+    setLevelFlash(null);
     setIsNewBest(false);
+    setSaveStatus("idle");
+    setSaveMessage("");
     setStatus("countdown");
     setCountdown(3);
 
@@ -871,6 +992,7 @@ Survive the block. Own the streak.`;
     playCountdownSound,
     stopAnimation,
     stopCountdown,
+    stopLevelFlashTimer,
   ]);
 
   const switchDirection = useCallback(() => {
@@ -892,13 +1014,20 @@ Survive the block. Own the streak.`;
     return () => {
       stopAnimation();
       stopCountdown();
+      stopLevelFlashTimer();
 
-      audioContextRef.current?.close();
+      if (
+        audioContextRef.current &&
+        audioContextRef.current.state !== "closed"
+      ) {
+        void audioContextRef.current.close();
+      }
     };
   }, [
     drawGame,
     stopAnimation,
     stopCountdown,
+    stopLevelFlashTimer,
   ]);
 
   return (
@@ -1040,26 +1169,46 @@ Survive the block. Own the streak.`;
                     </div>
                   </div>
 
+                  <div
+                    className={`mt-4 rounded-xl border px-3 py-2 text-xs ${
+                      saveStatus === "saved"
+                        ? "border-emerald-400/20 bg-emerald-500/10 text-emerald-300"
+                        : saveStatus === "error"
+                          ? "border-red-400/20 bg-red-500/10 text-red-300"
+                          : "border-blue-400/20 bg-blue-500/10 text-blue-300"
+                    }`}
+                  >
+                    {saveStatus === "saving"
+                      ? "Saving score..."
+                      : saveStatus === "saved"
+                        ? saveMessage
+                        : saveStatus === "error"
+                          ? saveMessage
+                          : "Preparing leaderboard score..."}
+                  </div>
+
                   <button
                     type="button"
                     onClick={(event) => {
                       event.stopPropagation();
                       startCountdown();
                     }}
-                    className="mt-6 w-full rounded-2xl bg-gradient-to-r from-[#0052FF] to-[#3B82F6] py-4 text-lg font-bold text-white shadow-[0_0_30px_rgba(0,82,255,0.28)] transition hover:scale-[1.02] active:scale-[0.97]"
+                    className="mt-5 w-full rounded-2xl bg-gradient-to-r from-[#0052FF] to-[#3B82F6] py-4 text-lg font-bold text-white shadow-[0_0_30px_rgba(0,82,255,0.28)] transition hover:scale-[1.02] active:scale-[0.97]"
                   >
                     Play Again
                   </button>
-<button
-  type="button"
-  onClick={(event) => {
-    event.stopPropagation();
-    shareScore();
-  }}
-  className="mt-3 w-full rounded-2xl border border-blue-400/20 bg-blue-500/10 py-3 font-semibold text-blue-200 transition hover:border-blue-300/40 hover:bg-blue-500/15 active:scale-[0.98]"
->
-  Share Score on X
-</button>
+
+                  <button
+                    type="button"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      shareScore();
+                    }}
+                    className="mt-3 w-full rounded-2xl border border-blue-400/20 bg-blue-500/10 py-3 font-semibold text-blue-200 transition hover:border-blue-300/40 hover:bg-blue-500/15 active:scale-[0.98]"
+                  >
+                    Share Score on X
+                  </button>
+
                   <p className="mt-3 text-xs text-slate-500">
                     One more run. Beat your orbit.
                   </p>

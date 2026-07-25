@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import AppContainer from "@/components/layout/AppContainer";
 import PlayGate from "@/components/game/PlayGate";
+import DailyLeaderboard from "@/components/leaderboard/DailyLeaderboard";
 
 export default function PlayPage() {
   return (
@@ -26,6 +27,8 @@ export default function PlayPage() {
       </div>
 
       <PlayGate />
+
+      <DailyLeaderboard />
     </AppContainer>
   );
 }
