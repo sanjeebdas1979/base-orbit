@@ -1,0 +1,31 @@
+import Link from "next/link";
+
+import AppContainer from "@/components/layout/AppContainer";
+import PlayGate from "@/components/game/PlayGate";
+
+export default function PlayPage() {
+  return (
+    <AppContainer>
+      <div className="flex items-center justify-between gap-4">
+        <Link
+          href="/"
+          className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-slate-300 transition hover:border-blue-400/30 hover:text-white"
+        >
+          ← Home
+        </Link>
+
+        <div className="text-right">
+          <p className="text-xs uppercase tracking-[0.28em] text-blue-300">
+            Base Orbit
+          </p>
+
+          <h1 className="mt-1 text-2xl font-black text-white">
+            Daily Challenge
+          </h1>
+        </div>
+      </div>
+
+      <PlayGate />
+    </AppContainer>
+  );
+}
