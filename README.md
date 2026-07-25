@@ -1,36 +1,134 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🚀 Base Orbit
 
-## Getting Started
+**Base Orbit** is a fast-paced onchain arcade game built on **Base Mainnet**.
 
-First, run the development server:
+Players activate a free **Daily Orbit Pass** with a gas-only transaction, survive the orbit, build their daily streak, and compete for the highest score.
+
+---
+
+## 🌐 Live Demo
+
+Coming Soon
+
+---
+
+## ✨ Features
+
+- 🔵 Built on Base Mainnet
+- 👛 Wallet Connection (MetaMask)
+- ⚡ Gas-only Daily Orbit Pass
+- 🎮 Fast-paced arcade gameplay
+- 📊 Live score tracking
+- 🏆 Best score system
+- 🔊 Sound effects
+- ⏱ 3...2...1 countdown
+- 🐦 Share score on X
+- 📱 Responsive design
+
+---
+
+## 🛠 Tech Stack
+
+- Next.js 15
+- React
+- TypeScript
+- Tailwind CSS
+- Wagmi
+- Viem
+- Solidity
+- Base Mainnet
+
+---
+
+## Smart Contract
+
+Network
+
+Base Mainnet
+
+Contract
+
+```text
+0x602d9DAFB35FCAf7A8e0D0DA871207711306EBE8
+```
+
+Contract Purpose
+
+- Daily Orbit Pass activation
+- One activation per wallet per UTC day
+- Gas-only transaction
+- Tracks unique pilots
+- Tracks total activations
+
+---
+
+## Gameplay
+
+1. Connect Wallet
+2. Switch to Base Mainnet
+3. Activate Daily Orbit Pass
+4. Confirm transaction
+5. Play today's challenge
+6. Beat your best score
+7. Share on X
+
+---
+
+## Local Development
+
+Install dependencies
+
+```bash
+npm install
+```
+
+Run development server
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Production build
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+npm run build
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+---
 
-## Learn More
+## Roadmap
 
-To learn more about Next.js, take a look at the following resources:
+### ✅ MVP
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- Wallet Connection
+- Base Mainnet
+- Daily Orbit Pass
+- Arcade Gameplay
+- Sound Effects
+- Countdown
+- Share on X
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### 🚀 Next
 
-## Deploy on Vercel
+- Onchain Leaderboard
+- Daily Streak
+- Achievement NFTs
+- Seasonal Events
+- Mobile Optimization
+- Global Rankings
+- Particle Effects
+- Advanced Animations
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+---
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Vision
+
+Base Orbit demonstrates how simple onchain interactions can become fun, engaging daily experiences.
+
+Instead of focusing only on DeFi, Base Orbit explores how gaming, wallets, and onchain identity can create a lightweight daily habit for users on Base.
+
+---
+
+## License
+
+MIT
