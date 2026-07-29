@@ -1,13 +1,14 @@
 "use client";
 
 import Link from "next/link";
+import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 
 import AppContainer from "@/components/layout/AppContainer";
 import PlayGate from "@/components/game/PlayGate";
 import DailyLeaderboard from "@/components/leaderboard/DailyLeaderboard";
 
-export default function PlayPage() {
+function PlayPageContent() {
   const searchParams = useSearchParams();
 
   const isRanked =
@@ -38,5 +39,33 @@ export default function PlayPage() {
 
       {isRanked && <DailyLeaderboard />}
     </AppContainer>
+  );
+}
+
+function PlayPageFallback() {
+  return (
+    <AppContainer>
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <div className="text-center">
+          <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-blue-400/20 border-t-blue-400" />
+
+          <p className="mt-4 text-xs uppercase tracking-[0.24em] text-blue-300">
+            Loading Orbit Arena
+          </p>
+
+          <p className="mt-2 text-sm text-slate-400">
+            Preparing your challenge...
+          </p>
+        </div>
+      </div>
+    </AppContainer>
+  );
+}
+
+export default function PlayPage() {
+  return (
+    <Suspense fallback={<PlayPageFallback />}>
+      <PlayPageContent />
+    </Suspense>
   );
 }
