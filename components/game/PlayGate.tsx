@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 
 import {
   useAccount,
@@ -9,6 +10,7 @@ import {
 } from "wagmi";
 
 import OrbitGame from "@/components/game/OrbitGame";
+import StreakCard from "@/components/streak/StreakCard";
 
 import {
   DAILY_ORBIT_PASS_ABI,
@@ -17,7 +19,19 @@ import {
 
 const BASE_CHAIN_ID = 8453;
 
+type GameMode = "practice" | "ranked";
+
 export default function PlayGate() {
+  const searchParams = useSearchParams();
+
+  const requestedMode =
+    searchParams.get("mode");
+
+  const mode: GameMode =
+    requestedMode === "ranked"
+      ? "ranked"
+      : "practice";
+
   const {
     address,
     chainId,
@@ -30,7 +44,8 @@ export default function PlayGate() {
   } = useSwitchChain();
 
   const isWrongNetwork =
-    isConnected && chainId !== BASE_CHAIN_ID;
+    isConnected &&
+    chainId !== BASE_CHAIN_ID;
 
   const {
     data: hasActivePass,
@@ -41,22 +56,39 @@ export default function PlayGate() {
     address: DAILY_ORBIT_PASS_ADDRESS,
     abi: DAILY_ORBIT_PASS_ABI,
     functionName: "hasActivePass",
-    args: address ? [address] : undefined,
+    args: address
+      ? [address]
+      : undefined,
     chainId: BASE_CHAIN_ID,
     query: {
       enabled:
+        mode === "ranked" &&
         Boolean(address) &&
         chainId === BASE_CHAIN_ID,
       refetchOnWindowFocus: true,
     },
   });
 
+  if (mode === "practice") {
+    return (
+      <section className="space-y-4">
+        <ModeBanner
+          label="Practice Mode"
+          title="Learn the Orbit"
+          description="No wallet or transaction required. Practice scores are saved only on this device and do not enter the daily leaderboard."
+        />
+
+        <OrbitGame mode="practice" />
+      </section>
+    );
+  }
+
   if (!isConnected) {
     return (
       <AccessCard
-        label="Wallet Required"
+        label="Ranked Challenge"
         title="Connect Your Pilot Wallet"
-        description="Return home and connect your wallet before entering today’s Orbit."
+        description="Connect your wallet and activate today’s Orbit Pass to compete on the official daily leaderboard."
       />
     );
   }
@@ -73,7 +105,8 @@ export default function PlayGate() {
         </h2>
 
         <p className="mt-3 text-sm leading-6 text-slate-400">
-          Base Orbit runs on Base Mainnet.
+          Ranked Base Orbit challenges run
+          on Base Mainnet.
         </p>
 
         <button
@@ -141,14 +174,75 @@ export default function PlayGate() {
   if (!hasActivePass) {
     return (
       <AccessCard
-        label="Orbit Locked"
+        label="Ranked Orbit Locked"
         title="Activate Today’s Orbit Pass"
-        description="One gas-only Base Mainnet transaction unlocks unlimited runs until the next UTC reset."
+        description="One gas-only Base Mainnet transaction unlocks unlimited ranked runs until the next UTC reset."
       />
     );
   }
 
-  return <OrbitGame />;
+  return (
+    <section className="space-y-4">
+      <ModeBanner
+        label="Ranked Challenge"
+        title="Official Daily Orbit"
+        description="Your best score can be saved to today’s leaderboard."
+      />
+
+      {address && (
+        <StreakCard
+          walletAddress={address}
+        />
+      )}
+
+      <OrbitGame mode="ranked" />
+    </section>
+  );
+}
+
+type ModeBannerProps = {
+  label: string;
+  title: string;
+  description: string;
+};
+
+function ModeBanner({
+  label,
+  title,
+  description,
+}: ModeBannerProps) {
+  return (
+    <section className="rounded-2xl border border-blue-400/20 bg-blue-500/10 px-5 py-4 backdrop-blur-xl">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-xs uppercase tracking-[0.24em] text-blue-300">
+            {label}
+          </p>
+
+          <h2 className="mt-1 text-xl font-black text-white">
+            {title}
+          </h2>
+
+          <p className="mt-1 text-sm leading-6 text-slate-400">
+            {description}
+          </p>
+        </div>
+
+        <Link
+          href={
+            label === "Practice Mode"
+              ? "/play?mode=ranked"
+              : "/play?mode=practice"
+          }
+          className="shrink-0 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-center text-sm font-semibold text-white transition hover:border-blue-400/30 hover:bg-blue-500/10"
+        >
+          {label === "Practice Mode"
+            ? "Enter Ranked"
+            : "Practice Mode"}
+        </Link>
+      </div>
+    </section>
+  );
 }
 
 type AccessCardProps = {
@@ -180,7 +274,14 @@ function AccessCard({
         href="/"
         className="mt-6 block w-full rounded-2xl bg-gradient-to-r from-[#0052FF] to-[#3B82F6] py-4 text-center font-bold text-white transition hover:scale-[1.02] active:scale-[0.98]"
       >
-        Return Home
+        Connect or Activate Pass
+      </Link>
+
+      <Link
+        href="/play?mode=practice"
+        className="mt-3 block w-full rounded-2xl border border-white/10 bg-white/5 py-4 text-center font-semibold text-slate-200 transition hover:border-blue-400/30 hover:bg-blue-500/10"
+      >
+        Play Practice Instead
       </Link>
     </section>
   );

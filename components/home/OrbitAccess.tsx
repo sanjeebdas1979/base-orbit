@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect } from "react";
 
 import {
@@ -129,60 +130,6 @@ export default function OrbitAccess() {
     });
   };
 
-  if (!isConnected) {
-    return (
-      <div className="space-y-3">
-        <PrimaryButton
-          onClick={() => {
-            if (connector) {
-              connect({ connector });
-            }
-          }}
-          disabled={
-            !connector || isConnecting
-          }
-        >
-          {isConnecting
-            ? "Connecting..."
-            : "Connect Wallet"}
-        </PrimaryButton>
-
-        {connectError && (
-          <p className="text-center text-sm text-red-400">
-            {getErrorMessage(connectError)}
-          </p>
-        )}
-      </div>
-    );
-  }
-
-  if (isWrongNetwork) {
-    return (
-      <div className="space-y-3">
-        <PrimaryButton
-          onClick={() =>
-            switchChain({
-              chainId: BASE_CHAIN_ID,
-            })
-          }
-          disabled={isSwitching}
-        >
-          {isSwitching
-            ? "Switching..."
-            : "Switch to Base"}
-        </PrimaryButton>
-
-        <button
-          type="button"
-          onClick={() => disconnect()}
-          className="w-full py-2 text-sm text-slate-400 transition hover:text-white"
-        >
-          Disconnect
-        </button>
-      </div>
-    );
-  }
-
   const transactionError =
     writeContract.error ?? receiptError;
 
@@ -191,124 +138,235 @@ export default function OrbitAccess() {
 
   return (
     <section className="space-y-4">
-      <div className="rounded-2xl border border-blue-400/20 bg-blue-500/10 p-4 backdrop-blur-xl">
-        <div className="flex items-center justify-between gap-4">
-          <div>
-            <p className="text-xs uppercase tracking-[0.18em] text-blue-300">
-              Pilot Connected
+      <div className="rounded-3xl border border-emerald-400/20 bg-emerald-500/10 p-5 text-center backdrop-blur-xl">
+        <p className="text-xs uppercase tracking-[0.22em] text-emerald-300">
+          Start Instantly
+        </p>
+
+        <h2 className="mt-3 text-2xl font-black text-white">
+          Try Practice Mode
+        </h2>
+
+        <p className="mt-2 text-sm leading-6 text-slate-400">
+          Learn the orbit mechanic without connecting
+          a wallet or signing a transaction.
+        </p>
+
+        <Link
+          href="/play?mode=practice"
+          className="mt-5 block w-full rounded-2xl bg-gradient-to-r from-emerald-500 to-cyan-500 py-4 text-center text-lg font-bold text-white transition hover:scale-[1.02] active:scale-[0.98]"
+        >
+          Play Practice
+        </Link>
+
+        <p className="mt-3 text-xs text-slate-500">
+          Practice scores do not enter the daily
+          leaderboard.
+        </p>
+      </div>
+
+      <div className="flex items-center gap-3">
+        <div className="h-px flex-1 bg-white/10" />
+
+        <p className="text-xs uppercase tracking-[0.22em] text-slate-500">
+          Ranked Challenge
+        </p>
+
+        <div className="h-px flex-1 bg-white/10" />
+      </div>
+
+      {!isConnected && (
+        <div className="space-y-3">
+          <div className="rounded-3xl border border-white/10 bg-white/5 p-5 text-center backdrop-blur-xl">
+            <p className="text-xs uppercase tracking-[0.22em] text-blue-300">
+              Official Leaderboard
             </p>
 
-            <p className="mt-1 font-medium text-white">
-              {address
-                ? shortenAddress(address)
-                : "Connected"}
+            <h2 className="mt-3 text-2xl font-black text-white">
+              Connect to Compete
+            </h2>
+
+            <p className="mt-2 text-sm leading-6 text-slate-400">
+              Connect your wallet when you are ready
+              to save official scores and compete
+              against other pilots.
             </p>
+
+            <div className="mt-5">
+              <PrimaryButton
+                onClick={() => {
+                  if (connector) {
+                    connect({ connector });
+                  }
+                }}
+                disabled={
+                  !connector || isConnecting
+                }
+              >
+                {isConnecting
+                  ? "Connecting..."
+                  : "Connect Wallet"}
+              </PrimaryButton>
+            </div>
           </div>
+
+          {connectError && (
+            <p className="text-center text-sm text-red-400">
+              {getErrorMessage(connectError)}
+            </p>
+          )}
+        </div>
+      )}
+
+      {isConnected && isWrongNetwork && (
+        <div className="space-y-3">
+          <PrimaryButton
+            onClick={() =>
+              switchChain({
+                chainId: BASE_CHAIN_ID,
+              })
+            }
+            disabled={isSwitching}
+          >
+            {isSwitching
+              ? "Switching..."
+              : "Switch to Base"}
+          </PrimaryButton>
 
           <button
             type="button"
             onClick={() => disconnect()}
-            className="rounded-xl border border-white/10 px-3 py-2 text-sm text-slate-300 transition hover:border-white/20 hover:text-white"
+            className="w-full py-2 text-sm text-slate-400 transition hover:text-white"
           >
             Disconnect
           </button>
         </div>
-      </div>
+      )}
 
-      <div className="rounded-3xl border border-white/10 bg-white/5 p-5 text-center backdrop-blur-xl">
-        {isCheckingPass ? (
-          <>
-            <p className="text-xs uppercase tracking-[0.22em] text-blue-300">
-              Checking Orbit Pass
-            </p>
+      {isConnected && !isWrongNetwork && (
+        <>
+          <div className="rounded-2xl border border-blue-400/20 bg-blue-500/10 p-4 backdrop-blur-xl">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <p className="text-xs uppercase tracking-[0.18em] text-blue-300">
+                  Pilot Connected
+                </p>
 
-            <h2 className="mt-3 text-2xl font-black text-white">
-              Reading Base Mainnet
-            </h2>
+                <p className="mt-1 font-medium text-white">
+                  {address
+                    ? shortenAddress(address)
+                    : "Connected"}
+                </p>
+              </div>
 
-            <p className="mt-3 text-sm text-slate-400">
-              Checking today&apos;s activation status...
-            </p>
-          </>
-        ) : hasActivePass ? (
-          <>
-            <p className="text-xs uppercase tracking-[0.22em] text-emerald-300">
-              Daily Pass Active
-            </p>
-
-            <h2 className="mt-3 text-2xl font-black text-white">
-              Today&apos;s Orbit Is Unlocked
-            </h2>
-
-            <p className="mt-2 text-sm leading-6 text-slate-400">
-              Unlimited runs are available until the
-              next UTC reset.
-            </p>
-
-            <a
-              href="/play"
-              className="mt-5 block w-full rounded-2xl bg-gradient-to-r from-[#0052FF] to-[#3B82F6] py-4 text-center text-lg font-bold text-white transition hover:scale-[1.02] active:scale-[0.98]"
-            >
-              Play Base Orbit
-            </a>
-          </>
-        ) : (
-          <>
-            <p className="text-xs uppercase tracking-[0.22em] text-blue-300">
-              Power Today&apos;s Orbit
-            </p>
-
-            <h2 className="mt-3 text-2xl font-black text-white">
-              Activate Daily Orbit Pass
-            </h2>
-
-            <p className="mt-2 text-sm leading-6 text-slate-400">
-              One Base Mainnet transaction unlocks
-              unlimited runs for today. No payment is
-              sent to the contract—you only pay the
-              network gas fee.
-            </p>
-
-            <button
-              type="button"
-              onClick={activatePass}
-              disabled={isActivating}
-              className="mt-5 w-full rounded-2xl bg-gradient-to-r from-[#0052FF] to-[#3B82F6] py-4 text-lg font-bold text-white transition hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-60 active:scale-[0.98]"
-            >
-              {writeContract.isPending
-                ? "Confirm in Wallet..."
-                : isConfirming
-                  ? "Activating on Base..."
-                  : "Activate Daily Orbit"}
-            </button>
-
-            <div className="mt-4 space-y-2 text-left text-sm text-slate-400">
-              <p>✓ Unlimited runs today</p>
-              <p>✓ Daily challenge access</p>
-              <p>✓ No contract payment required</p>
+              <button
+                type="button"
+                onClick={() => disconnect()}
+                className="rounded-xl border border-white/10 px-3 py-2 text-sm text-slate-300 transition hover:border-white/20 hover:text-white"
+              >
+                Disconnect
+              </button>
             </div>
-          </>
-        )}
+          </div>
 
-        {passReadError && (
-          <p className="mt-4 text-sm text-red-400">
-            Could not read the pass status. Check your
-            network connection and try again.
-          </p>
-        )}
+          <div className="rounded-3xl border border-white/10 bg-white/5 p-5 text-center backdrop-blur-xl">
+            {isCheckingPass ? (
+              <>
+                <p className="text-xs uppercase tracking-[0.22em] text-blue-300">
+                  Checking Orbit Pass
+                </p>
 
-        {transactionError && (
-          <p className="mt-4 break-words text-sm text-red-400">
-            {getErrorMessage(transactionError)}
-          </p>
-        )}
+                <h2 className="mt-3 text-2xl font-black text-white">
+                  Reading Base Mainnet
+                </h2>
 
-        {isConfirmed && !hasActivePass && (
-          <p className="mt-4 text-sm text-blue-300">
-            Transaction confirmed. Updating your pass...
-          </p>
-        )}
-      </div>
+                <p className="mt-3 text-sm text-slate-400">
+                  Checking today&apos;s activation
+                  status...
+                </p>
+              </>
+            ) : hasActivePass ? (
+              <>
+                <p className="text-xs uppercase tracking-[0.22em] text-emerald-300">
+                  Daily Pass Active
+                </p>
+
+                <h2 className="mt-3 text-2xl font-black text-white">
+                  Ranked Orbit Unlocked
+                </h2>
+
+                <p className="mt-2 text-sm leading-6 text-slate-400">
+                  Your official scores can now enter
+                  today&apos;s leaderboard.
+                </p>
+
+                <Link
+                  href="/play?mode=ranked"
+                  className="mt-5 block w-full rounded-2xl bg-gradient-to-r from-[#0052FF] to-[#3B82F6] py-4 text-center text-lg font-bold text-white transition hover:scale-[1.02] active:scale-[0.98]"
+                >
+                  Enter Ranked Challenge
+                </Link>
+              </>
+            ) : (
+              <>
+                <p className="text-xs uppercase tracking-[0.22em] text-blue-300">
+                  Unlock Ranked Mode
+                </p>
+
+                <h2 className="mt-3 text-2xl font-black text-white">
+                  Activate Daily Orbit Pass
+                </h2>
+
+                <p className="mt-2 text-sm leading-6 text-slate-400">
+                  One Base Mainnet transaction unlocks
+                  unlimited ranked runs for today. No
+                  payment is sent to the contract—you
+                  only pay the network gas fee.
+                </p>
+
+                <button
+                  type="button"
+                  onClick={activatePass}
+                  disabled={isActivating}
+                  className="mt-5 w-full rounded-2xl bg-gradient-to-r from-[#0052FF] to-[#3B82F6] py-4 text-lg font-bold text-white transition hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-60 active:scale-[0.98]"
+                >
+                  {writeContract.isPending
+                    ? "Confirm in Wallet..."
+                    : isConfirming
+                      ? "Activating on Base..."
+                      : "Activate Daily Orbit"}
+                </button>
+
+                <div className="mt-4 space-y-2 text-left text-sm text-slate-400">
+                  <p>✓ Unlimited ranked runs today</p>
+                  <p>✓ Official leaderboard access</p>
+                  <p>✓ No contract payment required</p>
+                </div>
+              </>
+            )}
+
+            {passReadError && (
+              <p className="mt-4 text-sm text-red-400">
+                Could not read the pass status. Check
+                your network connection and try again.
+              </p>
+            )}
+
+            {transactionError && (
+              <p className="mt-4 break-words text-sm text-red-400">
+                {getErrorMessage(transactionError)}
+              </p>
+            )}
+
+            {isConfirmed && !hasActivePass && (
+              <p className="mt-4 text-sm text-blue-300">
+                Transaction confirmed. Updating your
+                pass...
+              </p>
+            )}
+          </div>
+        </>
+      )}
     </section>
   );
 }

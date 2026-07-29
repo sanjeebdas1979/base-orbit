@@ -1,10 +1,18 @@
+"use client";
+
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 
 import AppContainer from "@/components/layout/AppContainer";
 import PlayGate from "@/components/game/PlayGate";
 import DailyLeaderboard from "@/components/leaderboard/DailyLeaderboard";
 
 export default function PlayPage() {
+  const searchParams = useSearchParams();
+
+  const isRanked =
+    searchParams.get("mode") === "ranked";
+
   return (
     <AppContainer>
       <div className="flex items-center justify-between gap-4">
@@ -21,14 +29,14 @@ export default function PlayPage() {
           </p>
 
           <h1 className="mt-1 text-2xl font-black text-white">
-            Daily Challenge
+            Orbit Arena
           </h1>
         </div>
       </div>
 
       <PlayGate />
 
-      <DailyLeaderboard />
+      {isRanked && <DailyLeaderboard />}
     </AppContainer>
   );
 }

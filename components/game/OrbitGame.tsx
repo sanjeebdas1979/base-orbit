@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 import {
   useCallback,
   useEffect,
@@ -9,11 +11,19 @@ import {
 
 import { useAccount } from "wagmi";
 
+import {
+  createOrbitChallenge,
+  formatChallengeSeed,
+  getDifficultyStars,
+  type OrbitChallenge,
+} from "@/lib/challengeEngine";
+
 const CANVAS_SIZE = 420;
 const CENTER = CANVAS_SIZE / 2;
 const ORBIT_RADIUS = 135;
 
-const BEST_SCORE_KEY = "base-orbit-best-score";
+const PRACTICE_BEST_SCORE_KEY = "base-orbit-practice-best-score";
+const RANKED_BEST_SCORE_KEY = "base-orbit-ranked-best-score";
 const SOUND_KEY = "base-orbit-sound-enabled";
 
 type GameStatus =
@@ -27,15 +37,7 @@ type SaveStatus =
   | "saving"
   | "saved"
   | "error";
-
-type Obstacle = {
-  angle: number;
-  radius: number;
-  speed: number;
-  direction: 1 | -1;
-};
-
-type Particle = {
+   type Particle = {
   x: number;
   y: number;
   velocityX: number;
@@ -43,28 +45,76 @@ type Particle = {
   life: number;
   size: number;
 };
+type ThemeColors = {
+  core: string;
+  coreGlow: string;
+  orbit: string;
+  playerGlow: string;
+  obstacle: string;
+  obstacleGlow: string;
+  background: string;
+};
 
-function createObstacles(): Obstacle[] {
-  return [
-    {
-      angle: Math.PI * 0.25,
-      radius: 12,
-      speed: 0.26,
-      direction: 1,
-    },
-    {
-      angle: Math.PI * 0.85,
-      radius: 13,
-      speed: 0.18,
-      direction: -1,
-    },
-    {
-      angle: Math.PI * 1.55,
-      radius: 11,
-      speed: 0.32,
-      direction: 1,
-    },
-  ];
+function getThemeColors(
+  theme: OrbitChallenge["theme"],
+): ThemeColors {
+  if (theme === "neon") {
+    return {
+      core: "#00E5FF",
+      coreGlow: "#00E5FF",
+      orbit: "rgba(34, 211, 238, 0.58)",
+      playerGlow: "#67E8F9",
+      obstacle: "#F43F5E",
+      obstacleGlow: "#FB7185",
+      background: "rgba(8, 145, 178, 0.22)",
+    };
+  }
+
+  if (theme === "solar") {
+    return {
+      core: "#F59E0B",
+      coreGlow: "#FBBF24",
+      orbit: "rgba(251, 191, 36, 0.55)",
+      playerGlow: "#FDE68A",
+      obstacle: "#EF4444",
+      obstacleGlow: "#F97316",
+      background: "rgba(245, 158, 11, 0.2)",
+    };
+  }
+
+  if (theme === "frost") {
+    return {
+      core: "#38BDF8",
+      coreGlow: "#BAE6FD",
+      orbit: "rgba(186, 230, 253, 0.55)",
+      playerGlow: "#E0F2FE",
+      obstacle: "#A78BFA",
+      obstacleGlow: "#C4B5FD",
+      background: "rgba(56, 189, 248, 0.19)",
+    };
+  }
+
+  if (theme === "violet") {
+    return {
+      core: "#8B5CF6",
+      coreGlow: "#A78BFA",
+      orbit: "rgba(167, 139, 250, 0.55)",
+      playerGlow: "#C4B5FD",
+      obstacle: "#F43F5E",
+      obstacleGlow: "#FB7185",
+      background: "rgba(124, 58, 237, 0.2)",
+    };
+  }
+
+  return {
+    core: "#0052FF",
+    coreGlow: "#0052FF",
+    orbit: "rgba(96, 165, 250, 0.48)",
+    playerGlow: "#60A5FA",
+    obstacle: "#FF4D6D",
+    obstacleGlow: "#FF4D6D",
+    background: "rgba(0, 82, 255, 0.24)",
+  };
 }
 
 function normalizeAngle(angle: number) {
@@ -104,8 +154,21 @@ function getLevelFromTime(elapsedTime: number) {
   return 5 + Math.floor(elapsedTime - 7);
 }
 
-export default function OrbitGame() {
+type GameMode = "practice" | "ranked";
+
+type OrbitGameProps = {
+  mode: GameMode;
+};
+
+export default function OrbitGame({
+  mode,
+}: OrbitGameProps) {
   const { address } = useAccount();
+
+  const bestScoreKey =
+    mode === "ranked"
+      ? RANKED_BEST_SCORE_KEY
+      : PRACTICE_BEST_SCORE_KEY;
 
   const canvasRef =
     useRef<HTMLCanvasElement | null>(null);
@@ -135,8 +198,20 @@ export default function OrbitGame() {
   const particlesRef = useRef<Particle[]>([]);
   const shakeEndTimeRef = useRef(0);
 
-  const obstaclesRef =
-    useRef<Obstacle[]>(createObstacles());
+  const challengeRef = useRef<OrbitChallenge>(
+    createOrbitChallenge(1),
+  );
+
+  const obstaclesRef = useRef(
+    challengeRef.current.obstacles.map(
+      (obstacle) => ({ ...obstacle }),
+    ),
+  );
+
+  const [challenge, setChallenge] =
+    useState<OrbitChallenge>(
+      challengeRef.current,
+    );
 
   const [status, setStatus] =
     useState<GameStatus>("ready");
@@ -166,7 +241,7 @@ export default function OrbitGame() {
 
   useEffect(() => {
     const savedBestScore =
-      window.localStorage.getItem(BEST_SCORE_KEY);
+      window.localStorage.getItem(bestScoreKey);
 
     if (savedBestScore) {
       const parsedScore = Number(savedBestScore);
@@ -182,7 +257,7 @@ export default function OrbitGame() {
     if (savedSound !== null) {
       setSoundEnabled(savedSound === "true");
     }
-  }, []);
+  }, [bestScoreKey]);
 
   const getAudioContext = useCallback(() => {
     if (!audioContextRef.current) {
@@ -286,7 +361,15 @@ export default function OrbitGame() {
   }, []);
 
   const shareScore = useCallback(() => {
-    const text = `I scored ${score} in Base Orbit on Base 🟦
+    const runLabel =
+      mode === "ranked"
+        ? "Ranked Challenge"
+        : "Practice Mode";
+
+    const text = `I scored ${score} in Base Orbit ${runLabel} on Base 🟦
+
+Challenge: ${challenge.name}
+Difficulty: ${getDifficultyStars(challenge.difficulty)}
 
 Can you beat my score?
 
@@ -306,7 +389,7 @@ Survive the block. Own the streak.`;
       "_blank",
       "noopener,noreferrer",
     );
-  }, [score]);
+  }, [challenge, mode, score]);
 
   const saveScore = useCallback(
     async (
@@ -487,6 +570,10 @@ Survive the block. Own the streak.`;
 
     context.save();
 
+    const themeColors = getThemeColors(
+      challengeRef.current.theme,
+    );
+
     context.clearRect(
       0,
       0,
@@ -517,7 +604,7 @@ Survive the block. Own the streak.`;
 
     backgroundGradient.addColorStop(
       0,
-      "rgba(0, 82, 255, 0.24)",
+      themeColors.background,
     );
 
     backgroundGradient.addColorStop(
@@ -544,8 +631,7 @@ Survive the block. Own the streak.`;
       Math.PI * 2,
     );
 
-    context.strokeStyle =
-      "rgba(96, 165, 250, 0.48)";
+    context.strokeStyle = themeColors.orbit;
 
     context.lineWidth = 3;
     context.stroke();
@@ -581,8 +667,8 @@ Survive the block. Own the streak.`;
       Math.PI * 2,
     );
 
-    context.fillStyle = "#0052FF";
-    context.shadowColor = "#0052FF";
+    context.fillStyle = themeColors.core;
+    context.shadowColor = themeColors.coreGlow;
     context.shadowBlur = 42;
     context.fill();
 
@@ -623,8 +709,8 @@ Survive the block. Own the streak.`;
           Math.PI * 2,
         );
 
-        context.fillStyle = "#ff4d6d";
-        context.shadowColor = "#ff4d6d";
+        context.fillStyle = themeColors.obstacle;
+        context.shadowColor = themeColors.obstacleGlow;
         context.shadowBlur = 24;
         context.fill();
 
@@ -668,7 +754,7 @@ Survive the block. Own the streak.`;
     );
 
     context.fillStyle = "#ffffff";
-    context.shadowColor = "#60a5fa";
+    context.shadowColor = themeColors.playerGlow;
     context.shadowBlur = 30;
     context.fill();
 
@@ -692,7 +778,7 @@ Survive the block. Own the streak.`;
         context.fillStyle =
           particle.life > 0.5
             ? "#ffffff"
-            : "#ff4d6d";
+            : themeColors.obstacle;
 
         context.fill();
       },
@@ -761,7 +847,9 @@ Survive the block. Own the streak.`;
     setLevel(finalLevel);
     setStatus("game-over");
 
-    void saveScore(finalScore, finalLevel);
+    if (mode === "ranked") {
+      void saveScore(finalScore, finalLevel);
+    }
 
     setBestScore((currentBest) => {
       const beatPreviousBest =
@@ -775,7 +863,7 @@ Survive the block. Own the streak.`;
       setIsNewBest(beatPreviousBest);
 
       window.localStorage.setItem(
-        BEST_SCORE_KEY,
+        bestScoreKey,
         String(nextBest),
       );
 
@@ -784,7 +872,9 @@ Survive the block. Own the streak.`;
 
     runExplosionAnimation();
   }, [
+    bestScoreKey,
     createCollisionParticles,
+    mode,
     playCrashSound,
     runExplosionAnimation,
     saveScore,
@@ -822,12 +912,14 @@ Survive the block. Own the streak.`;
       );
 
       playerSpeedRef.current =
-        1.55 + speedBoost;
+        challengeRef.current.playerBaseSpeed +
+        speedBoost;
 
       scoreRef.current +=
         deltaSeconds *
         10 *
-        currentLevel;
+        currentLevel *
+        challengeRef.current.scoreMultiplier;
 
       playerAngleRef.current =
         normalizeAngle(
@@ -928,16 +1020,25 @@ Survive the block. Own the streak.`;
     stopCountdown();
     stopLevelFlashTimer();
 
+    const nextChallenge =
+      createOrbitChallenge();
+
+    challengeRef.current = nextChallenge;
+    setChallenge(nextChallenge);
+
     playerAngleRef.current = 0;
     playerDirectionRef.current = 1;
-    playerSpeedRef.current = 1.55;
+    playerSpeedRef.current =
+      nextChallenge.playerBaseSpeed;
 
     scoreRef.current = 0;
     elapsedTimeRef.current = 0;
     previousTimeRef.current = null;
 
     obstaclesRef.current =
-      createObstacles();
+      nextChallenge.obstacles.map(
+        (obstacle) => ({ ...obstacle }),
+      );
 
     particlesRef.current = [];
 
@@ -1032,6 +1133,54 @@ Survive the block. Own the streak.`;
 
   return (
     <section className="mx-auto flex w-full max-w-md flex-col items-center">
+      <div className="mb-4 w-full rounded-2xl border border-blue-400/20 bg-blue-500/10 px-5 py-4 backdrop-blur-xl">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p className="text-xs uppercase tracking-[0.22em] text-blue-300">
+              Current Variation
+            </p>
+
+            <h2 className="mt-1 text-xl font-black text-white">
+              {challenge.name}
+            </h2>
+
+            <p className="mt-1 text-sm leading-6 text-slate-400">
+              {challenge.description}
+            </p>
+          </div>
+
+          <div className="shrink-0 text-right">
+            <p className="text-sm tracking-[0.08em] text-yellow-300">
+              {getDifficultyStars(
+                challenge.difficulty,
+              )}
+            </p>
+
+            <p className="mt-2 text-[10px] uppercase tracking-[0.16em] text-slate-500">
+              Seed {formatChallengeSeed(challenge.seed)}
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-3 flex flex-wrap gap-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-300">
+          <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1">
+            {challenge.obstacleCount} obstacles
+          </span>
+
+          <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1">
+            {challenge.speedType}
+          </span>
+
+          <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1">
+            {challenge.directionType}
+          </span>
+
+          <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1">
+            ×{challenge.scoreMultiplier} score
+          </span>
+        </div>
+      </div>
+
       <div className="mb-5 grid w-full grid-cols-[1fr_1fr_1fr_auto] items-center rounded-2xl border border-white/10 bg-white/5 px-5 py-4 backdrop-blur-xl">
         <div>
           <p className="text-xs uppercase tracking-[0.18em] text-slate-500">
@@ -1136,7 +1285,7 @@ Survive the block. Own the streak.`;
                   )}
 
                   <p className="text-xs uppercase tracking-[0.3em] text-red-300">
-                    Orbit Lost
+                    Orbit Lost · {challenge.name}
                   </p>
 
                   <h2 className="mt-3 text-5xl font-black tracking-tight text-white">
@@ -1169,23 +1318,50 @@ Survive the block. Own the streak.`;
                     </div>
                   </div>
 
-                  <div
-                    className={`mt-4 rounded-xl border px-3 py-2 text-xs ${
-                      saveStatus === "saved"
-                        ? "border-emerald-400/20 bg-emerald-500/10 text-emerald-300"
-                        : saveStatus === "error"
-                          ? "border-red-400/20 bg-red-500/10 text-red-300"
-                          : "border-blue-400/20 bg-blue-500/10 text-blue-300"
-                    }`}
-                  >
-                    {saveStatus === "saving"
-                      ? "Saving score..."
-                      : saveStatus === "saved"
-                        ? saveMessage
-                        : saveStatus === "error"
+                  {mode === "ranked" ? (
+                    <div
+                      className={`mt-4 rounded-xl border px-3 py-2 text-xs ${
+                        saveStatus === "saved"
+                          ? "border-emerald-400/20 bg-emerald-500/10 text-emerald-300"
+                          : saveStatus === "error"
+                            ? "border-red-400/20 bg-red-500/10 text-red-300"
+                            : "border-blue-400/20 bg-blue-500/10 text-blue-300"
+                      }`}
+                    >
+                      {saveStatus === "saving"
+                        ? "Saving score..."
+                        : saveStatus === "saved"
                           ? saveMessage
-                          : "Preparing leaderboard score..."}
-                  </div>
+                          : saveStatus === "error"
+                            ? saveMessage
+                            : "Preparing leaderboard score..."}
+                    </div>
+                  ) : (
+                    <div className="mt-5 rounded-2xl border border-blue-400/20 bg-blue-500/10 p-4 text-left">
+                      <p className="text-xs font-bold uppercase tracking-[0.2em] text-blue-300">
+                        Ready to Compete?
+                      </p>
+
+                      <p className="mt-2 text-sm leading-6 text-slate-300">
+                        Great run! Activate your Orbit
+                        Pass to submit official scores
+                        and compete on today&apos;s
+                        leaderboard.
+                      </p>
+                    </div>
+                  )}
+
+                  {mode === "practice" && (
+                    <Link
+                      href="/play?mode=ranked"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                      }}
+                      className="mt-5 block w-full rounded-2xl bg-gradient-to-r from-[#0052FF] to-[#3B82F6] py-4 text-center text-lg font-bold text-white shadow-[0_0_30px_rgba(0,82,255,0.28)] transition hover:scale-[1.02] active:scale-[0.97]"
+                    >
+                      Save an Official Score
+                    </Link>
+                  )}
 
                   <button
                     type="button"
@@ -1193,9 +1369,15 @@ Survive the block. Own the streak.`;
                       event.stopPropagation();
                       startCountdown();
                     }}
-                    className="mt-5 w-full rounded-2xl bg-gradient-to-r from-[#0052FF] to-[#3B82F6] py-4 text-lg font-bold text-white shadow-[0_0_30px_rgba(0,82,255,0.28)] transition hover:scale-[1.02] active:scale-[0.97]"
+                    className={`w-full rounded-2xl py-4 text-lg font-bold transition active:scale-[0.97] ${
+                      mode === "ranked"
+                        ? "mt-5 bg-gradient-to-r from-[#0052FF] to-[#3B82F6] text-white shadow-[0_0_30px_rgba(0,82,255,0.28)] hover:scale-[1.02]"
+                        : "mt-3 border border-white/10 bg-white/5 text-white hover:border-blue-400/30 hover:bg-blue-500/10"
+                    }`}
                   >
-                    Play Again
+                    {mode === "ranked"
+                      ? "Play Ranked Again"
+                      : "Practice Again"}
                   </button>
 
                   <button
@@ -1210,22 +1392,26 @@ Survive the block. Own the streak.`;
                   </button>
 
                   <p className="mt-3 text-xs text-slate-500">
-                    One more run. Beat your orbit.
+                    {mode === "ranked"
+                      ? "One more run. Climb the leaderboard."
+                      : "Practice freely until you are ready to compete."}
                   </p>
                 </>
               ) : (
                 <>
                   <p className="text-sm uppercase tracking-[0.25em] text-blue-300">
-                    Daily Orbit
+                    {mode === "ranked"
+                      ? "Ranked Challenge"
+                      : "Practice Mode"}
                   </p>
 
                   <h2 className="mt-3 text-3xl font-black text-white">
-                    Survive the Block
+                    {challenge.name}
                   </h2>
 
                   <p className="mt-3 text-sm leading-6 text-slate-400">
-                    Reverse direction, avoid every
-                    obstacle and beat your best score.
+                    {challenge.description} Every new
+                    run generates a fresh variation.
                   </p>
 
                   <button
@@ -1236,7 +1422,9 @@ Survive the block. Own the streak.`;
                     }}
                     className="mt-6 rounded-2xl bg-gradient-to-r from-[#0052FF] to-[#3B82F6] px-9 py-4 text-lg font-bold text-white transition hover:scale-105 active:scale-95"
                   >
-                    Start Orbit
+                    {mode === "ranked"
+                      ? "Start Ranked Orbit"
+                      : "Start Practice"}
                   </button>
                 </>
               )}
@@ -1248,7 +1436,9 @@ Survive the block. Own the streak.`;
       <p className="mt-5 text-center text-sm text-slate-400">
         Tap the arena to switch direction.
         <br />
-        Survive, level up and beat your best.
+        {mode === "ranked"
+          ? "Survive and climb today’s leaderboard."
+          : "Practice freely and master the orbit."}
       </p>
     </section>
   );
