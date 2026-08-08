@@ -14,10 +14,38 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(
+    "https://baseorbitplay.xyz",
+  ),
+
   title: "Base Orbit",
-  description: "Can You Beat Today's Orbit?",
+
+  description:
+    "Can You Beat Today's Orbit? Practice for free, enter Ranked Mode, build your streak, and climb the daily leaderboard on Base.",
+
+  alternates: {
+    canonical: "/",
+  },
+
+  openGraph: {
+    title: "Base Orbit",
+    description:
+      "Can You Beat Today's Orbit? Practice for free, compete in Ranked Mode, build your streak, and climb the daily leaderboard on Base.",
+    url: "https://baseorbitplay.xyz",
+    siteName: "Base Orbit",
+    type: "website",
+  },
+
+  twitter: {
+    card: "summary_large_image",
+    title: "Base Orbit",
+    description:
+      "Practice, compete, build your streak, and climb the daily leaderboard on Base.",
+  },
+
   other: {
-    "base:app_id": "6a6510ba8ce641820ba172cf",
+    "base:app_id":
+      "6a6510ba8ce641820ba172cf",
   },
 };
 
