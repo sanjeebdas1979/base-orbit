@@ -2,133 +2,115 @@
 
 **Base Orbit** is a fast-paced onchain arcade game built on **Base Mainnet**.
 
-Players activate a free **Daily Orbit Pass** with a gas-only transaction, survive the orbit, build their daily streak, and compete for the highest score.
+Activate your Daily Orbit Pass, enter the Orbit Arena, survive dynamic challenges, build your streak, and compete for the highest score on the daily leaderboard.
+
+🌐 **Live:** https://baseorbitplay.xyz
 
 ---
 
-## 🌐 Live Demo
+## 🎮 Play Base Orbit
 
-Coming Soon
+👉 https://baseorbitplay.xyz
+
+Base Orbit combines arcade gameplay with lightweight onchain interactions, turning a simple Base Mainnet transaction into a daily gaming experience.
+
+Players can start instantly in **Practice Mode** or connect their wallet and activate a **Daily Orbit Pass** to enter Ranked Mode.
 
 ---
 
 ## ✨ Features
 
 - 🔵 Built on Base Mainnet
-- 👛 Wallet Connection (MetaMask)
+- 👛 MetaMask wallet connection
 - ⚡ Gas-only Daily Orbit Pass
-- 🎮 Fast-paced arcade gameplay
-- 📊 Live score tracking
-- 🏆 Best score system
+- 🎮 Practice Mode
+- 🏆 Ranked Challenge Mode
+- 🔥 Daily Pilot Streak
+- 📊 Daily Leaderboard
+- 🎯 Dynamic challenge variations
+- 🧩 Multiple obstacle configurations
+- 📈 Live score and level tracking
+- 🏅 Personal best score tracking
 - 🔊 Sound effects
 - ⏱ 3...2...1 countdown
 - 🐦 Share score on X
-- 📱 Responsive design
+- 📱 Responsive interface
+- 🌐 Custom production domain
 
 ---
 
-## 🛠 Tech Stack
+## 🕹 Game Modes
 
-- Next.js 15
-- React
-- TypeScript
-- Tailwind CSS
-- Wagmi
-- Viem
-- Solidity
-- Base Mainnet
+### Practice Mode
+
+Players can learn the Orbit mechanics and play without connecting a wallet or signing a transaction.
+
+Practice scores do not enter the official daily leaderboard.
+
+### Ranked Mode
+
+Connect a wallet on Base Mainnet and activate the Daily Orbit Pass to unlock ranked gameplay.
+
+Ranked players can:
+
+- Compete on the daily leaderboard
+- Build their daily streak
+- Track their best score
+- Play rotating challenge variations
+- Replay ranked challenges throughout the active day
 
 ---
 
-## Smart Contract
+## 🔥 Daily Pilot Streak
 
-Network
+Base Orbit rewards consistent participation.
 
-Base Mainnet
+Playing ranked challenges across consecutive days builds a player's streak and creates progression beyond a single high score.
 
-Contract
+The streak system tracks:
+
+- Current streak
+- Best streak
+- Daily participation
+- Progress toward future cosmetic rewards
+
+---
+
+## 🏆 Daily Leaderboard
+
+Ranked scores are saved to the daily leaderboard.
+
+Players compete to become one of the **Top Orbit Pilots** by surviving longer and reaching higher levels.
+
+Leaderboard data updates automatically during gameplay.
+
+---
+
+## 🌀 Dynamic Orbit Challenges
+
+Base Orbit includes rotating gameplay variations designed to make each challenge feel different.
+
+Variations can change:
+
+- Obstacle layouts
+- Movement behavior
+- Rotation direction
+- Challenge modifiers
+- Difficulty progression
+
+This creates more replayability while keeping the core one-touch Orbit mechanic simple.
+
+---
+
+## ⛓ Onchain Integration
+
+Base Orbit uses **Base Mainnet** for the Daily Orbit Pass.
+
+### Network
+
+**Base Mainnet**
+
+### Daily Orbit Pass Contract
 
 ```text
 0x602d9DAFB35FCAf7A8e0D0DA871207711306EBE8
-```
-
-Contract Purpose
-
-- Daily Orbit Pass activation
-- One activation per wallet per UTC day
-- Gas-only transaction
-- Tracks unique pilots
-- Tracks total activations
-
----
-
-## Gameplay
-
-1. Connect Wallet
-2. Switch to Base Mainnet
-3. Activate Daily Orbit Pass
-4. Confirm transaction
-5. Play today's challenge
-6. Beat your best score
-7. Share on X
-
----
-
-## Local Development
-
-Install dependencies
-
-```bash
-npm install
-```
-
-Run development server
-
-```bash
-npm run dev
-```
-
-Production build
-
-```bash
-npm run build
-```
-
----
-
-## Roadmap
-
-### ✅ MVP
-
-- Wallet Connection
-- Base Mainnet
-- Daily Orbit Pass
-- Arcade Gameplay
-- Sound Effects
-- Countdown
-- Share on X
-
-### 🚀 Next
-
-- Onchain Leaderboard
-- Daily Streak
-- Achievement NFTs
-- Seasonal Events
-- Mobile Optimization
-- Global Rankings
-- Particle Effects
-- Advanced Animations
-
----
-
-## Vision
-
-Base Orbit demonstrates how simple onchain interactions can become fun, engaging daily experiences.
-
-Instead of focusing only on DeFi, Base Orbit explores how gaming, wallets, and onchain identity can create a lightweight daily habit for users on Base.
-
----
-
-## License
-
-MIT
